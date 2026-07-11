@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model CmsEntry {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  deleted   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+model Winner {
+  id         String   @id @default(cuid())
+  fullName   String
+  university String
+  department String
+  year       Int
+  rank       String?
+  photoUrl   String?
+  note       String?
+  isActive   Boolean  @default(true)
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
+}
+
+
+model FormSubmission {
+  id         String   @id @default(cuid())
+  fullName   String
+  phone      String
+  grade      String?
+  role       String?
+  message    String?
+  sourcePage String?
+  createdAt  DateTime @default(now())
+}
+
+model UserAccount {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String?  @unique
+  fullName  String
+  classLevel String?
+  passwordHash String @map("password")
+  role      UserRole
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teacherAssignments Assignment[] @relation("TeacherAssignments")
+  studentAssignments StudentAssignment[]
+  examResults ExamResult[]
+  studyPlans StudyPlan[]
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  dueDate     DateTime?
+  className   String?
+  teacherId   String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teacher UserAccount @relation("TeacherAssignments", fields: [teacherId], references: [id])
+  students StudentAssignment[]
+}
+
+model StudentAssignment {
+  id           String   @id @default(cuid())
+  assignmentId String
+  studentId    String
+  status       AssignmentStatus @default(assigned)
+  score        Float?
+  feedback     String?
+  completedAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  student    UserAccount @relation(fields: [studentId], references: [id])
+}
+
+model ExamResult {
+  id          String   @id @default(cuid())
+  studentId   String
+  examName    String
+  examDate    DateTime @default(now())
+  correct     Int
+  wrong       Int
+  empty       Int
+  net         Float
+  pdfUrl      String?
+  weakTopics  String?
+  advice      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  student UserAccount @relation(fields: [studentId], references: [id])
+}
+
+model StudyPlan {
+  id        String   @id @default(cuid())
+  studentId String
+  title     String
+  content   String
+  pdfUrl    String?
+  startDate DateTime?
+  endDate   DateTime?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student UserAccount @relation(fields: [studentId], references: [id])
+}
+
+enum UserRole {
+  admin
+  teacher
+  student
+}
+
+enum AssignmentStatus {
+  assigned
+  in_progress
+  completed
+  checked
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  event     String
+  actor     String?
+  ip        String?
+  userAgent String?
+  meta      String?
+  createdAt DateTime @default(now())
+}
